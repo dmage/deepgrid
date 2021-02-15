@@ -1,0 +1,2 @@
+#!/bin/sh
+exec docker rm -f deepgrid-postgresql

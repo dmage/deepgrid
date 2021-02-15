@@ -1,0 +1,2 @@
+#!/bin/sh
+exec docker exec -i deepgrid-postgresql psql -U postgres <./init.sql

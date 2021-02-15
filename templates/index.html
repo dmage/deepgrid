@@ -1,0 +1,104 @@
+<style>
+tbody tr {
+    background-color: #eee;
+}
+tbody tr:nth-child(odd) {
+    background-color: #ccc;
+}
+tbody td {
+    word-break: break-word;
+}
+.cell-content {
+    max-height: 200px;
+    overflow: scroll;
+}
+.signature {
+    white-space: pre-wrap;
+}
+</style>
+
+<h1>DeepGrid</h1>
+<p>{{.Duration}}<p>
+<a href="/?columns=test&count=tests">Top Failing Tests</a>
+<a href="/?columns=signature&count=tests">Top Failing Signatures</a>
+<form method="get" action="/">
+    Columns:
+    <label><input type="radio" name="columns" value=""{{if eq .Query.Columns ""}} checked{{end}}> none</label>
+    <label><input type="radio" name="columns" value="job"{{if eq .Query.Columns "job"}} checked{{end}}> job</label>
+    <label><input type="radio" name="columns" value="test"{{if eq .Query.Columns "test"}} checked{{end}}> test</label>
+    <label><input type="radio" name="columns" value="signature"{{if eq .Query.Columns "signature"}} checked{{end}}> signature</label>
+    <label><input type="radio" name="columns" value="job,test"{{if eq .Query.Columns "job,test"}} checked{{end}}> job,test</label>
+    <label><input type="radio" name="columns" value="job,build_id"{{if eq .Query.Columns "job,build_id"}} checked{{end}}> job,build_id</label>
+    <label><input type="radio" name="columns" value="job,build_id,test"{{if eq .Query.Columns "job,build_id,test"}} checked{{end}}> job,build_id,test</label>
+    <label><input type="radio" name="columns" value="job,build_id,test,signature"{{if eq .Query.Columns "job,build_id,test,signature"}} checked{{end}}> job,build_id,test,signature</label>
+    <br>
+    Job: <input type="text" name="job" value="{{.Query.Job}}"}><br>
+    Test: <input type="text" name="test" value="{{.Query.Test}}"}><br>
+    Output: <input type="text" name="output" value="{{.Query.Output}}"}><br>
+    Signature: <textarea name="signature">{{.Query.Signature}}</textarea><br>
+    Count:
+    <label><input type="radio" name="count" value="jobs"{{if eq .Query.Count "jobs"}} checked{{end}}> jobs</label>
+    <label><input type="radio" name="count" value="tests"{{if eq .Query.Count "tests"}} checked{{end}}> tests</label>
+    <br>
+    Order:
+    <label><input type="radio" name="order" value=""{{if eq .Query.Order ""}} checked{{end}}> failures</label>
+    <label><input type="radio" name="order" value="timestamp"{{if eq .Query.Order "timestamp"}} checked{{end}}> timestamp</label>
+    <br>
+    Age:
+    <label><input type="radio" name="age" value=""{{if eq .Query.Age ""}} checked{{end}}> any</label>
+    <label><input type="radio" name="age" value="172800"{{if eq .Query.Age "172800"}} checked{{end}}> 2d</label>
+    <label><input type="radio" name="age" value="86400"{{if eq .Query.Age "86400"}} checked{{end}}> 1d</label>
+    <label><input type="radio" name="age" value="43200"{{if eq .Query.Age "43200"}} checked{{end}}> 12h</label>
+    <br>
+    <input type="submit">
+</form>
+<table style="table-layout: fixed">
+    {{$count := .Query.Count}}
+    <thead>
+        <tr>
+            {{range .Columns}}
+                <td>{{.Title}}</td>
+            {{end}}
+            {{if eq $count "tests"}}
+                <td>Failures</td>
+                <td>Flakes</td>
+                <td>Success</td>
+                <td>Total</td>
+            {{else}}
+                <td>Failures</td>
+                <td>Success</td>
+                <td>Total</td>
+            {{end}}
+        </tr>
+    </thead>
+    <tbody>
+        {{$output := .Query.Output}}
+        {{$columns := .Columns}}
+        {{range $row := .Data}}
+        <tr>
+            {{range $col := $columns}}
+                {{if eq $col.Field "BuildID"}}
+                    <td>{{index $row $col.Field}} <a href="https://prow.ci.openshift.org/view/gs/origin-ci-test/logs/{{$row.Job}}/{{$row.BuildID}}">Prow</a></td>
+                {{else if eq $col.Field "Test"}}
+                    <td><a href="/?{{$col.Query}}=^{{index $row $col.Field | reescaper}}$&columns=job,build_id&count=tests">{{index $row $col.Field}}</a></td>
+                {{else if eq $col.Field "Signature"}}
+                    <td><div class="cell-content signature"><a href="/?{{$col.Query}}=^{{index $row $col.Field | reescaper}}$&columns=job,test&count=tests">{{index $row $col.Field}}</a></div></td>
+                {{else}}
+                    <td><div class="cell-content"><a href="/?{{$col.Query}}=^{{index $row $col.Field | reescaper}}$&columns=job,test&count=tests">{{index $row $col.Field}}</a></div></td>
+                {{end}}
+            {{end}}
+            {{if eq $count "tests"}}
+                <td style="width: 5%">{{.Failures}}{{if ne $output ""}} ({{.FailuresMatches}} matched){{end}}</td>
+                <td style="width: 5%">{{.Flakes}}{{if ne $output ""}}  ({{.FlakesMatches}} matched){{end}}</td>
+                <td style="width: 5%">{{.Successes}}{{if ne $output ""}}  ({{.SuccessesMatches}} matched){{end}}</td>
+                <td style="width: 5%">{{.Total}}</td>
+                <td style="width: 5%">{{.Signatures}} sigs</td>
+            {{else}}
+                <td>{{.Failures}}</td>
+                <td>{{.Successes}}</td>
+                <td>{{.Total}} ({{.Matches}} matched)</td>
+            {{end}}
+        </tr>
+        {{end}}
+    </tbody>
+</table>

@@ -1,0 +1,3 @@
+#!/bin/sh
+export DATABASE_URL=${DATABASE_URL:-postgres://postgres:qwerty@localhost:5432/postgres}
+exec go run ./cmd/deepgrid/ "$@"
